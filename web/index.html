@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Crash Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#eee; text-align:center; }
+    h1 { margin-top:30px; }
+    #balanceBox { margin:20px; font-size:20px; }
+    #addPointsBtn {
+      margin-left:10px; padding:3px 8px; background:#0a84ff; color:#fff;
+      border:none; border-radius:5px; cursor:pointer;
+    }
+    #game { margin-top:40px; }
+    #multiplier { font-size:50px; margin:20px; }
+    input { padding:8px; border-radius:5px; border:none; margin:10px; }
+    button {
+      padding:10px 20px; margin:10px; border:none; border-radius:5px;
+      background:#0a84ff; color:white; cursor:pointer;
+    }
+    button:hover { background:#0066cc; }
+    #result { margin-top:20px; font-size:18px; }
+  </style>
+</head>
+<body>
+  <h1>🔥 لعبة Crash 🔥</h1>
+
+  <div id="balanceBox">
+    <span id="balance">رصيدك: 0</span>
+    <button id="addPointsBtn">+</button>
+  </div>
+
+  <div id="game">
+    <div id="multiplier">x1.00</div>
+    <input id="bet" type="number" value="10" min="1"> نقاط<br>
+    <button id="startBtn">ابدأ</button>
+    <button id="cashoutBtn" disabled>اسحب</button>
+    <div id="result"></div>
+  </div>
+
+<script>
+// 🔹 بيانات اللاعب (مؤقتة – لحد ما نوصلها بالباك-إند)
+let balance = 0;       // الرصيد يبدأ من 0
+let gameInterval = null;
+let multiplier = 1.0;
+let crashPoint = 0;
+let playing = false;
+
+// تحديث الرصيد على الشاشة
+function updateBalance() {
+  document.getElementById("balance").innerText = "رصيدك: " + balance;
+}
+
+// بدء اللعبة
+function startGame() {
+  let bet = parseInt(document.getElementById("bet").value);
+  if (balance <= 0) {
+    alert("⚠️ لازم تطلب نقاط من الأدمن الأول");
+    return;
+  }
+  if (bet > balance || bet <= 0) {
+    alert("⚠️ رصيدك مش كافي أو الرهان غير صحيح");
+    return;
+  }
+
+  playing = true;
+  multiplier = 1.0;
+  crashPoint = (Math.random() * 4 + 1.3).toFixed(2);
+  document.getElementById("result").innerText = "";
+  document.getElementById("cashoutBtn").disabled = false;
+
+  balance -= bet;
+  updateBalance();
+
+  gameInterval = setInterval(() => {
+    multiplier = (parseFloat(multiplier) + 0.1).toFixed(2);
+    document.getElementById("multiplier").innerText = "x" + multiplier;
+
+    if (parseFloat(multiplier) >= crashPoint) {
+      clearInterval(gameInterval);
+      playing = false;
+      document.getElementById("result").innerText =
+        "❌ كراش عند x" + crashPoint + " - خسرت";
+      document.getElementById("cashoutBtn").disabled = true;
+    }
+  }, 500);
+}
+
+// السحب
+function cashOut() {
+  if (!playing) return;
+  clearInterval(gameInterval);
+  playing = false;
+
+  let bet = parseInt(document.getElementById("bet").value);
+  let win = Math.floor(bet * multiplier);
+
+  balance += win;
+  updateBalance();
+
+  document.getElementById("result").innerText =
+    "✅ سحبت عند x" + multiplier + " - كسبت " + win;
+  document.getElementById("cashoutBtn").disabled = true;
+}
+
+// 🔹 فتح شات الأدمن
+document.getElementById("addPointsBtn").onclick = () => {
+  window.open("https://t.me/OoNooBet", "_blank");
+};
+
+document.getElementById("startBtn").onclick = startGame;
+document.getElementById("cashoutBtn").onclick = cashOut;
+
+// أول تحديث
+updateBalance();
+</script>
+</body>
+</html>
