@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OoNooDemo - منصة مراهنات تجريبية بنقاط</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans","Helvetica Neue",Arial;}
+    body{direction:rtl;margin:0;padding:0;background:#0f1724;color:#e6eef8}
+    header{background:linear-gradient(90deg,#0b1220,#132133);padding:18px}
+    .container{max-width:1100px;margin:20px auto;padding:16px}
+    h1{margin:0;font-size:20px}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    button{cursor:pointer;padding:8px 12px;border-radius:6px;border:0}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.02));padding:12px;border-radius:10px;margin-bottom:14px;box-shadow:0 2px 8px rgba(2,6,23,0.6)}
+    input,select{padding:8px;border-radius:6px;border:1px solid #243444;background:transparent;color:#e6eef8}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .match{padding:10px;border-radius:8px;background:rgba(255,255,255,0.02)}
+    .footer{margin-top:20px;font-size:12px;color:#98a3b3;text-align:center}
+    .small{font-size:13px;color:#9fb0c9}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(1,1fr)}}
+    .btn-primary{background:#1f7aef;color:white}
+    .btn-danger{background:#ff5c5c;color:white}
+    .status-win{color:#7bf59b}
+    .status-lose{color:#ff8787}
+    .muted{color:#7a8aa0}
+    .inline{display:inline-block}
+    .leader{display:flex;justify-content:space-between;gap:8px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="container topbar">
+    <div>
+      <h1>OoNooDemo — منصة مراهنات بالنقاط (تجريبية)</h1>
+      <div class="small">نسخة تعليمية بدون تعاملات مالية</div>
+    </div>
+    <div id="userBlock">
+      <!-- بيانات المستخدم تُعرض هنا -->
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section id="authSection" class="card">
+    <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <div>
+        <h3>تسجيل / تسجيل دخول سريع</h3>
+        <div class="small">سجّل باسم مستخدم فقط — يتم تخزين كل شيء محلياً في المتصفح (localStorage)</div>
+      </div>
+      <div class="controls">
+        <input id="usernameInput" placeholder="اسم المستخدم" />
+        <button id="registerBtn" class="btn-primary">سجل</button>
+        <button id="loginBtn">دخول</button>
+        <button id="logoutBtn" style="display:none" class="btn-danger">تسجيل خروج</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="balanceSection" class="card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="small muted">الرصيد الحالي</div>
+        <div style="font-size:22px" id="balanceDisplay">0 نقاط</div>
+        <div class="small">لعب، رهان، متابعة الإحصائيات</div>
+      </div>
+      <div>
+        <button id="addFaucet" title="تحصل على نقاط مجانية" class="btn-primary">احصل على 50 نقطة مجانية</button>
+        <button id="openAdmin" class="small">لوحة المشرف</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="matchesSection" class="card">
+    <h3>المباريات والألعاب</h3>
+    <div class="small muted">اختار نتيجة وحط رهان بالنقاط — النتائج تحل تلقائياً.</div>
+    <div id="matchesGrid" class="grid" style="margin-top:12px"></div>
+  </section>
+
+  <section id="betsSection" class="card" style="display:none">
+    <h3>سجل رهاناتك (آخر الرهانات)</h3>
+    <div id="betsList"></div>
+  </section>
+
+  <section class="card">
+    <h3>قائمة المتصدرين</h3>
+    <div id="leaders"></div>
+  </section>
+
+  <div class="footer">
+    هذا مشروع تعليمي — لا يُستخدم للأموال الحقيقية. لو تريد فتح مشروع قانوني حقيقي، راجع القوانين في بلدك واستشر محامي.
+  </div>
+</main>
+
+<!-- لوحة إدارة مبسطة -->
+<div id="adminModal" style="position:fixed;right:20px;top:80px;width:320px;z-index:80;display:none">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>لوحة المشرف</strong>
+      <button id="closeAdmin">X</button>
+    </div>
+    <div style="margin-top:10px">
+      <div class="small muted">أضف مباراة جديدة</div>
+      <input id="m_home" placeholder="الفريق A" style="width:100%;margin-top:6px"/>
+      <input id="m_away" placeholder="الفريق B" style="width:100%;margin-top:6px"/>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input id="odds_home" placeholder="أودز A (مثال 2.1)" />
+        <input id="odds_draw" placeholder="أودز تعادل (مثال 3.2)" />
+        <input id="odds_away" placeholder="أودز B (مثال 3.5)" />
+      </div>
+      <button id="addMatchBtn" class="btn-primary" style="margin-top:8px">أضف مباراة</button>
+      <hr/>
+      <div class="small muted">أكّد كلمة مرور المشرف لتظهر</div>
+      <input id="adminPass" placeholder="كلمة مرور admin" style="width:100%;margin-top:6px"/>
+      <button id="authAdminBtn" style="margin-top:8px">دخول كمشرف</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  OoNooDemo - single-file demo
+  - كل البيانات تُخزن محلياً عبر localStorage (مستخدمون، مباريات، رهانات)
+  - لا يوجد سيرفر، مناسب للتحميل على GitHub Pages أو فتح محلياً
+  - غيّر كلمة المرور المشرف داخل الكود قبل النشر لو حابب (حاليا admin123)
+*/
+
+// ------- helpers ----------
+const uid = () => 'id'+Math.random().toString(36).slice(2,9)
+const STORAGE = {
+  USERS: 'oonoo_users_v1',
+  MATCHES: 'oonoo_matches_v1',
+  BETS: 'oonoo_bets_v1',
+  SESSION: 'oonoo_session_v1'
+}
+const ADMIN_PASSWORD = 'admin123' // غيّرها لو تحب
+
+function load(key, fallback){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback }catch(e){return fallback} }
+function save(key, value){ localStorage.setItem(key, JSON.stringify(value)) }
+
+// ------- init data ----------
+let users = load(STORAGE.USERS, {})
+let matches = load(STORAGE.MATCHES, null)
+let bets = load(STORAGE.BETS, [])
+let session = load(STORAGE.SESSION, null)
+
+if(!matches){
+  // عين شوية مباريات افتراضية
+  matches = [
+    {id:uid(),home:"فريق الأهلي",away:"الزمالك",odds:{home:1.9,draw:3.5,away:4.2},status:"open",result:null,starts:new Date().toISOString()},
+    {id:uid(),home:"مانشستر يونايتد",away:"ليفربول",odds:{home:2.8,draw:3.1,away:2.4},status:"open",result:null,starts:new Date().toISOString()},
+    {id:uid(),home:"برشلونة",away:"ريال مدريد",odds:{home:2.6,draw:3.2,away:2.1},status:"open",result:null,starts:new Date().toISOString()}
+  ]
+  save(STORAGE.MATCHES, matches)
+}
+
+// save initial stores
+save(STORAGE.USERS, users); save(STORAGE.MATCHES, matches); save(STORAGE.BETS, bets)
+
+// ------- UI elements ----------
+const usernameInput = document.getElementById('usernameInput')
+const registerBtn = document.getElementById('registerBtn')
+const loginBtn = document.getElementById('loginBtn')
+const logoutBtn = document.getElementById('logoutBtn')
+const userBlock = document.getElementById('userBlock')
+const balanceSection = document.getElementById('balanceSection')
+const balanceDisplay = document.getElementById('balanceDisplay')
+const addFaucet = document.getElementById('addFaucet')
+const matchesGrid = document.getElementById('matchesGrid')
+const betsSection = document.getElementById('betsSection')
+const betsList = document.getElementById('betsList')
+const leadersDiv = document.getElementById('leaders')
+const adminModal = document.getElementById('adminModal')
+const openAdmin = document.getElementById('openAdmin')
+const closeAdmin = document.getElementById('closeAdmin')
+const authAdminBtn = document.getElementById('authAdminBtn')
+const adminPassInput = document.getElementById('adminPass')
+const addMatchBtn = document.getElementById('addMatchBtn')
+const m_home=document.getElementById('m_home'), m_away=document.getElementById('m_away')
+const odds_home=document.getElementById('odds_home'), odds_draw=document.getElementById('odds_draw'), odds_away=document.getElementById('odds_away')
+
+// ------- auth ----------
+function updateUserBlock(){
+  if(!session){ userBlock.innerHTML = '<div class="small muted">غير متصل</div>'; logoutBtn.style.display='none'; balanceSection.style.display='none'; betsSection.style.display='none'; return }
+  const u = users[session]
+  userBlock.innerHTML = `<div style="text-align:right">
+    <div><strong>${u.username}</strong></div>
+    <div class="small muted">رصيد: <span id="miniBal">${u.balance}</span> نقاط</div>
+  </div>`
+  logoutBtn.style.display='inline-block'; balanceSection.style.display='block'; betsSection.style.display='block'
+  document.getElementById('miniBal').textContent = u.balance
+  balanceDisplay.textContent = u.balance + ' نقاط'
+}
+
+registerBtn.addEventListener('click', ()=>{
+  const name = usernameInput.value.trim()
+  if(!name) return alert('اكتب اسم مستخدم')
+  // use username as id (simple)
+  if(Object.values(users).some(u=>u.username===name)) return alert('الاسم ده مستخدم بالفعل')
+  const id = uid()
+  users[id] = {id, username:name, balance:200, created:new Date().toISOString()} // نقطة البداية: 200
+  save(STORAGE.USERS, users)
+  session = id; save(STORAGE.SESSION, session)
+  alert('تم التسجيل! حصلت على 200 نقطة تجريبية')
+  updateUserBlock(); renderMatches(); renderBets(); renderLeaders()
+})
+
+loginBtn.addEventListener('click', ()=>{
+  const name = usernameInput.value.trim()
+  if(!name) return alert('اكتب اسم المستخدم')
+  const found = Object.values(users).find(u=>u.username===name)
+  if(!found) return alert('المستخدم مش موجود، سجل جديد')
+  session = found.id; save(STORAGE.SESSION, session)
+  updateUserBlock(); renderMatches(); renderBets(); renderLeaders()
+})
+
+logoutBtn.addEventListener('click', ()=>{
+  session = null; localStorage.removeItem(STORAGE.SESSION); updateUserBlock()
+})
+
+// faucet
+addFaucet.addEventListener('click', ()=>{
+  if(!session) return alert('سجّل أولا')
+  users[session].balance += 50
+  save(STORAGE.USERS, users)
+  updateUserBlock(); renderMatches(); renderLeaders()
+  alert('أضيفت 50 نقطة لحسابك')
+})
+
+// ------- rendering ----------
+function clear(el){ el.innerHTML = '' }
+
+function renderMatches(){
+  clear(matchesGrid)
+  matches.forEach(m=>{
+    const d = document.createElement('div'); d.className='match card'
+    const title = document.createElement('div'); title.innerHTML = `<strong>${m.home}</strong> vs <strong>${m.away}</strong>`
+    const oddsHtml = document.createElement('div'); oddsHtml.className='small muted'
+    oddsHtml.innerHTML = `أودز — ${m.home}: ${m.odds.home} · تعادل: ${m.odds.draw} · ${m.away}: ${m.odds.away}`
+    d.appendChild(title); d.appendChild(oddsHtml)
+    const form = document.createElement('div'); form.style.marginTop='8px'
+    const select = document.createElement('select')
+    select.innerHTML = `<option value="home">${m.home}</option><option value="draw">تعادل</option><option value="away">${m.away}</option>`
+    const amt = document.createElement('input'); amt.type='number'; amt.placeholder='نقاط'; amt.style.width='90px'; amt.min=1
+    const place = document.createElement('button'); place.className='btn-primary'; place.textContent='راهن'
+    place.onclick = ()=>{
+      if(!session) return alert('سجّل أولا')
+      const a = parseInt(amt.value)
+      if(!a || a<=0) return alert('اكتب قيمة رهان صحيحة')
+      if(a > users[session].balance) return alert('مش كفاية نقاط')
+      // create bet
+      const choice = select.value
+      const odd = (choice==='home'?m.odds.home:choice==='draw'?m.odds.draw:m.odds.away)
+      const bet = {id:uid(),user:session,matchId:m.id,choice,stake:a,odd,placedAt:new Date().toISOString(),status:'pending'}
+      bets.unshift(bet); save(STORAGE.BETS, bets)
+      users[session].balance -= a; save(STORAGE.USERS, users)
+      updateUserBlock(); renderBets(); renderLeaders()
+      alert('تم وضع الرهان بنجاح')
+    }
+    form.appendChild(select); form.appendChild(amt); form.appendChild(place)
+    d.appendChild(form)
+    // if match resolved, show result
+    const resDiv = document.createElement('div'); resDiv.style.marginTop='8px'
+    if(m.status==='closed'){
+      resDiv.innerHTML = `<div class="${m.result==='draw'?'status-lose':''} small">النتيجة: ${
+        m.result==='home'?m.home:(m.result==='away'?m.away:'تعادل')
+      }</div>`
+    } else {
+      const resolveBtn = document.createElement('button'); resolveBtn.textContent='حلّل الآن (محاكاة)'
+      resolveBtn.onclick = ()=>{ resolveMatch(m.id) }
+      resDiv.appendChild(resolveBtn)
+    }
+    d.appendChild(resDiv)
+    matchesGrid.appendChild(d)
+  })
+}
+
+function renderBets(){
+  clear(betsList)
+  const shown = bets.slice(0,20)
+  if(shown.length===0){ betsList.innerHTML = '<div class="small muted">لا توجد رهانات حتى الآن</div>'; return }
+  shown.forEach(b=>{
+    const u = users[b.user] ? users[b.user].username : 'مستخدم محذوف'
+    const match = matches.find(mm=>mm.id===b.matchId)
+    const mtitle = match?`${match.home} vs ${match.away}`:'-'
+    const div = document.createElement('div'); div.className='card'; div.style.marginBottom='6px'
+    div.innerHTML = `<div style="display:flex;justify-content:space-between">
+      <div><strong>${u}</strong> — ${mtitle}</div>
+      <div>${new Date(b.placedAt).toLocaleString()}</div></div>
+      <div class="small muted">الاختيار: ${b.choice} · رهان: ${b.stake} · أودز: ${b.odd}</div>
+      <div style="margin-top:6px">${b.status==='pending'?'<span class="small muted">قيد الانتظار</span>': (b.status==='win'?'<span class="status-win">فازت — ربح: '+b.payout+'</span>':'<span class="status-lose">خسرت</span>')}</div>`
+    betsList.appendChild(div)
+  })
+}
+
+function renderLeaders(){
+  // sort users by balance
+  const arr = Object.values(users).sort((a,b)=>b.balance-a.balance).slice(0,5)
+  clear(leadersDiv)
+  if(arr.length===0){ leadersDiv.innerHTML='<div class="small muted">لا يوجد مستخدمين</div>'; return }
+  arr.forEach((u,i)=>{
+    const div = document.createElement('div'); div.className='card leader'
+    div.innerHTML = `<div><strong>#${i+1} ${u.username}</strong><div class="small muted">مستخدم منذ ${new Date(u.created).toLocaleDateString()}</div></div><div style="text-align:left"><strong>${u.balance}</strong><div class="small">نقطة</div></div>`
+    leadersDiv.appendChild(div)
+  })
+}
+
+// ------- admin & resolve ----------
+openAdmin.addEventListener('click', ()=>{ adminModal.style.display='block' })
+closeAdmin.addEventListener('click', ()=>{ adminModal.style.display='none' })
+
+authAdminBtn.addEventListener('click', ()=>{
+  const p = adminPassInput.value
+  if(p===ADMIN_PASSWORD){ alert('تم تفعيل صلاحيات المشرف - يمكنك الآن إضافة مباريات'); document.getElementById('addMatchBtn').disabled=false } else alert('كلمة المرور خاطئة')
+})
+
+addMatchBtn.addEventListener('click', ()=>{
+  const home = m_home.value.trim(), away=m_away.value.trim()
+  const oh=parseFloat(odds_home.value), od=parseFloat(odds_draw.value), oa=parseFloat(odds_away.value)
+  if(!home||!away||!oh||!od||!oa) return alert('اكمل بيانات المباراة والأودز')
+  const m = {id:uid(),home,away,odds:{home:+oh,draw:+od,away:+oa},status:'open',result:null,starts:new Date().toISOString()}
+  matches.unshift(m); save(STORAGE.MATCHES,matches); renderMatches(); alert('تم إضافة المباراة')
+})
+
+// Resolve a match (simulate outcome using implied probabilities)
+function resolveMatch(matchId){
+  const m = matches.find(x=>x.id===matchId); if(!m) return
+  if(m.status==='closed') return alert('المباراة مُغلقة')
+  // compute implied probabilities from decimal odds (normalize)
+  const p_home = 1/m.odds.home, p_draw=1/m.odds.draw, p_away=1/m.odds.away
+  const sum = p_home+p_draw+p_away
+  const r = Math.random()
+  let cum = p_home/sum
+  let result
+  if(r < cum) result='home'
+  else if(r < cum + (p_draw/sum)) result='draw'
+  else result='away'
+  m.status='closed'; m.result=result; m.resolvedAt=new Date().toISOString()
+  // settle bets
+  bets.forEach(b=>{
+    if(b.matchId!==m.id || b.status!=='pending') return
+    if(b.choice===result){
+      b.status='win'; b.payout = Math.round(b.stake * b.odd)
+      // give payout to user
+      if(users[b.user]) users[b.user].balance += b.payout
+    } else {
+      b.status='lose'
+    }
+  })
+  save(STORAGE.MATCHES,matches); save(STORAGE.BETS,bets); save(STORAGE.USERS,users)
+  renderMatches(); renderBets(); renderLeaders(); alert('تم حل المباراة: النتيجة — ' + (result==='home'?m.home:(result==='away'?m.away:'تعادل')))
+}
+
+// ------- initial render ----------
+updateUserBlock(); renderMatches(); renderBets(); renderLeaders()
+
+// small UX: clicking a match result auto-resolve after 3 seconds (sim)
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='r'){ // اختصار: اضغط r لمحاكاة حل مباراة عشوائية
+    const openMatches = matches.filter(m=>m.status==='open')
+    if(openMatches.length===0) return alert('لا توجد مباريات مفتوحة')
+    resolveMatch(openMatches[0].id)
+  }
+})
+</script>
+</body>
+</html>
